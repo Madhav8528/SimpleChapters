@@ -5,7 +5,7 @@ import { ApiError }  from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
 
-
+//tested
 const getChapters = asyncHandler(async (req, res) => {
     
     const {
@@ -32,7 +32,7 @@ const getChapters = asyncHandler(async (req, res) => {
   if (status){ 
     queryObj.status = status
   }
-  if (weakChapters !== undefined) {
+  if (weakChapters !== "") {
     if (weakChapters === "true" || weakChapters === "false") {
       queryObj.isWeakChapter = weakChapters === "true"
     } else {
@@ -67,7 +67,7 @@ const getChapters = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Chapters fetched successfully"));
 });
 
-
+//tested
 const getChapterById = asyncHandler( async (req, res) => {
     
     const { id } = req.params
@@ -88,7 +88,7 @@ const getChapterById = asyncHandler( async (req, res) => {
 
 })
 
-
+//tested
 const uploadChapters = asyncHandler(async (req, res) => {
     
     if (!req.file){
@@ -101,6 +101,8 @@ const uploadChapters = asyncHandler(async (req, res) => {
     } catch {
       throw new ApiError(400, "Invalid file passed, please provide a valid json file.")
     }
+    //console.log("Total chapters in file", chapterData.length);
+    
 
     if (!Array.isArray(chapterData)){
       chapterData = [chapterData]
@@ -108,7 +110,7 @@ const uploadChapters = asyncHandler(async (req, res) => {
   
     const validationResults = await Promise.allSettled(
       chapterData.map(async (data) => {
-        const doc = new Chapters(data)
+        const doc = new Chapters(data, {strict : "throw"})
         await doc.validate()
         return doc
     }))
@@ -123,6 +125,9 @@ const uploadChapters = asyncHandler(async (req, res) => {
         failedChapters.push(chapterData[index])
       }
     })
+
+    //console.log("Valid:", validChapters.length)
+    //console.log("Failed:", failedChapters.length)
 
     if (validChapters.length > 0){
 
