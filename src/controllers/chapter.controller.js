@@ -89,8 +89,73 @@ const getChapterById = asyncHandler( async (req, res) => {
 })
 
 
+const uploadChapters = asyncHandler(async (req, res) => {
+    
+    if (!req.file){
+      throw new ApiError(400, "No file uploaded")
+    }
+
+    let chapterData
+    try {
+      chapterData = JSON.parse(req.file.buffer.toString())
+    } catch {
+      throw new ApiError(400, "Invalid file passed, please provide a valid json file.")
+    }
+
+    if (!Array.isArray(chapterData)){
+      chapterData = [chapterData]
+    }
+  
+    const validationResults = await Promise.allSettled(
+      chapterData.map(async (data) => {
+        const doc = new Chapters(data)
+        await doc.validate()
+        return doc
+    }))
+  
+    const validChapters = []
+    const failedChapters = []
+
+    validationResults.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        validChapters.push(result.value)
+      } else {
+        failedChapters.push(chapterData[index])
+      }
+    })
+
+    if (validChapters.length > 0){
+
+      await Chapters.insertMany(validChapters)
+
+      const keys = await redisClient.keys("chapters*")
+      if (keys.length > 0){
+        await redisClient.del(keys)
+      }
+    }
+
+    const responseData = {
+      insertedChapters: validChapters.length,
+      failed_to_upload_chapters: failedChapters.length
+    }
+
+    if (failedChapters.length > 0){
+
+      responseData.failedChapters = failedChapters
+      return res
+        .status(207)
+        .json(new ApiResponse(207, responseData, `Chapters uploaded with ${failedChapters.length} failures`)
+      )
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, responseData, "All chapters uploaded successfully")
+    )
+})
 
 
 export { getChapters,
-         getChapterById
+         getChapterById,
+         uploadChapters
 };
