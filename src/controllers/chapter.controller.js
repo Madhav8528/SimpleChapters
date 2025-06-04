@@ -32,7 +32,7 @@ const getChapters = asyncHandler(async (req, res) => {
   if (status){ 
     queryObj.status = status
   }
-  if (weakChapters !== "") {
+  if (weakChapters) {
     if (weakChapters === "true" || weakChapters === "false") {
       queryObj.isWeakChapter = weakChapters === "true"
     } else {
